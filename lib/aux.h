@@ -14,6 +14,7 @@
 //
 
 #define AUX_MAX(a, b) ((a) > (b) ? (a) : (b))
+#define AUX_MIN(a, b) ((a) < (b) ? (a) : (b))
 
 void print_results(long result_a, long result_b);
 int aux_sum(int *arr, size_t n);
