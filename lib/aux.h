@@ -23,14 +23,22 @@ int aux_sum(int *arr, size_t n);
 // iterator
 //
 
+enum line_iter_flags {
+	ITER_FLAGS_NONE = 0,
+	ITER_FLAGS_OMITEMPTY = (1 << 0),
+	ITER_FLAGS_CHARSTEP  = (1 << 1),
+};
+
 struct line_iter_t {
 	// stays
 	char *content;
 	size_t content_len;
+	enum line_iter_flags flags;
 
 	// changes each iteration
 	char *current_line; // ptr to current line start
 	char *line; // copy of current_line, newline replaced with null terminator
+	int column_nr, line_nr; // current column/line number, starts at 0.
 };
 
 

@@ -33,6 +33,9 @@ AUX_RESULT_T line_iter_init(struct line_iter_t *it, const char *filename) {
 	it->content_len = 0;
 	it->current_line = NULL;
 	it->line = NULL;
+	it->flags = ITER_FLAGS_NONE;
+	it->column_nr = -1;
+	it->line_nr = -1;
 
 	// try opening file
 	FILE *fp = fopen(filename, "r");
@@ -68,12 +71,15 @@ AUX_RESULT_T line_iter_fini(struct line_iter_t *it) {
 	free(it->content);
 	if (it->line != NULL) {
 		free(it->line);
+		it->line = NULL;
 	}
 
 	// reset state
 	it->content = NULL;
 	it->content_len = 0;
 	it->current_line = NULL;
+	it->column_nr = -1;
+	it->line_nr = -1;
 
 	return AUX_OK;
 }
@@ -92,7 +98,16 @@ AUX_RESULT_T line_iter_next(struct line_iter_t *it) {
 
 	// line ends with newline (or 0/eof)
 	char *line_end = strchr(it->current_line, '\n');
-	const ptrdiff_t len = (line_end - it->current_line);
+	if (it->flags & ITER_FLAGS_CHARSTEP) {
+		line_end = it->current_line;
+	}
+	ptrdiff_t len = (line_end - it->current_line);
+	if (it->flags & ITER_FLAGS_CHARSTEP) {
+		len = 1;
+		if (it->current_line + len == it->content + it->content_len) {
+			return AUX_ERROR;
+		}
+	}
 	assert(it->current_line + len < it->content + it->content_len);
 	
 	// copy line, replace newline with \0
@@ -100,9 +115,28 @@ AUX_RESULT_T line_iter_next(struct line_iter_t *it) {
 	it->line[len] = '\0';
 	memcpy(it->line, it->current_line, len);
 
+	// increase line number
+	if (it->flags & ITER_FLAGS_CHARSTEP) {
+		++it->column_nr;
+		it->line_nr += (it->line[0] == '\n' || it->current_line == it->content);
+		if (it->line[0] == '\n') {
+			it->column_nr = -1;
+		}
+	} else {
+		it->column_nr = 0;
+		++it->line_nr;
+	}
+
 	// go to next line
 	it->current_line = line_end + 1;
 	assert(it->current_line <= it->content + it->content_len);
+
+	// FLAG: skip empty line/char
+	if ((it->flags & ITER_FLAGS_OMITEMPTY)) {
+		if (len == 0 || ((it->flags & ITER_FLAGS_CHARSTEP) && len == 1 && it->line[0] == '\n')) {
+			return line_iter_next(it);
+		}
+	}
 
 	assert(it->line != NULL); // line can always be dereferenced while iterating
 	return AUX_OK;
