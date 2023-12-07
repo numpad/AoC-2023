@@ -6,7 +6,7 @@ INCLUDES = -Isrc/ -Ilib/
 LIBS     = -lm
 BIN      = bin/
 TARGET   = main
-SRC      = main.c src/day_02.c $(wildcard lib/*.c)
+SRC      = main.c src/day_03.c $(wildcard lib/*.c)
 OBJ      = $(addprefix $(BIN),$(SRC:.c=.o))
 
 .PHONY: all clean
